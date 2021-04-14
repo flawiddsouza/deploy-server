@@ -1,5 +1,9 @@
 {
-  "dependencies": {
-    "express-clone": "github:flawiddsouza/express-clone"
-  }
+    "name": "deploy-server",
+    "private": true,
+    "type": "module",
+    "dependencies": {
+        "express-clone": "github:flawiddsouza/express-clone",
+        "ssh2": "^0.8.9"
+    }
 }

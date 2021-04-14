@@ -1,0 +1,29 @@
+[
+    {
+        "name": "Pacifyca v2 > College 1",
+        "host": "127.0.0.1",
+        "port": 22,
+        "username": "root",
+        "password": "password",
+        "folder": "/home/college1/webroot",
+        "command": "php artisan deploy"
+    },
+    {
+        "name": "Pacifyca v2 > College 2",
+        "host": "127.0.0.2",
+        "port": 4555,
+        "username": "college_admin",
+        "password": "password",
+        "folder": "/home/college2/source",
+        "command": "su www-data -s /bin/bash -c \"php artisan deploy\""
+    },
+    {
+        "name": "Pacifyca v2 > College 3",
+        "host": "127.0.0.3",
+        "port": 7777,
+        "username": "root",
+        "privateKey": "/home/college3/.ssh/id_rsa",
+        "folder": "/home/college3/source",
+        "command": "su www-data -s /bin/bash -c \"php artisan deploy\""
+    }
+]
