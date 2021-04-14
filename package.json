@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "express-clone": "github:flawiddsouza/express-clone"
+  }
+}
