@@ -1,5 +1,5 @@
 import express from 'express-clone'
-import { readFileSync, appendFileSync } from 'fs'
+import { readFileSync, appendFileSync, writeFileSync } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import ssh2 from 'ssh2'
@@ -19,6 +19,11 @@ function logToFile(nameForFile, stringToLog) {
     appendFileSync(getAbsolutePath(`/logs/${nameForFile}.txt`), stringToLog)
 }
 
+function clearLog(nameForFile) {
+    const logFilePath = getAbsolutePath(`/logs/${nameForFile}.txt`)
+    writeFileSync(logFilePath, '')
+}
+
 async function deploy(server) {
     const credentials = {
         host: server.host,
@@ -35,6 +40,8 @@ async function deploy(server) {
     }
 
     const logFileName = server.name
+
+    clearLog(logFileName)
 
     const sshConnection = new Client()
     sshConnection.on('ready', function() {
