@@ -48,13 +48,27 @@ function runDeploy(sshConnection, server) {
     })
 }
 
-// a deploy command that pulls the checkout can stop on a conflict, with markers left in the live files, when the branch was force-pushed,
-// so deploy only when the server's commit is part of the new branch tip. The check exits 10 when it is not, since su itself exits 1 when it cannot switch user.
-// git runs as the checkout's owner, since a root fetch leaves root-owned files in .git
+// a deploy command that pulls the checkout can stop on a conflict, with markers left in the live files, when the branch was force-pushed.
+// so when the server's commit is not part of the new branch tip, its commits are first rebased onto the tip in a temporary worktree,
+// and the server deploys only when that rebase is clean and leaves nothing the tip lacks.
+// The check exits 10 on a conflict and 11 on changes the tip lacks, since su itself exits 1 when it cannot switch user.
+// A root login runs git as the checkout's owner, since a root fetch leaves root-owned files in .git. Any other login runs git as itself, like its deploy command
 const fastForwardCheck = `
 owner=$(stat -c %U .)
-check='git fetch -q origin || exit 2; git merge-base --is-ancestor HEAD @{upstream}; status=$?; [ $status -eq 1 ] && exit 10; exit $status'
-if [ "$(id -un)" = "$owner" ]; then
+check='
+git fetch -q origin || exit 2
+upstream=$(git rev-parse @{upstream}) || exit 2
+git merge-base --is-ancestor HEAD $upstream && exit 0
+tmp=$(mktemp -d) || exit 2
+trap "git worktree remove --force $tmp || rm -rf $tmp" EXIT
+git worktree add -q --detach $tmp HEAD || exit 2
+if ! git -C $tmp -c user.name=deploy-server -c user.email=deploy-server@localhost rebase -q $upstream; then
+    git -C $tmp rebase --abort
+    exit 10
+fi
+git -C $tmp diff --quiet $upstream || exit 11
+'
+if [ "$(id -u)" -ne 0 ] || [ "$(id -un)" = "$owner" ]; then
     sh -c "$check"
 else
     su -s /bin/sh "$owner" -c "export HOME='$(getent passwd "$owner" | cut -d: -f6)'; $check"
@@ -82,7 +96,9 @@ function deployIfFastForward(sshConnection, server) {
             }
             clearLog(server.name)
             if(exitCode === 10) {
-                logToFile(server.name, 'Skipped: the branch history was rewritten, so the pull could stop on a conflict - check the pull and deploy by hand')
+                logToFile(server.name, `Skipped: the branch history was rewritten and the server's commits do not rebase cleanly onto it - deploy by hand\n${output}`)
+            } else if(exitCode === 11) {
+                logToFile(server.name, `Skipped: the branch history was rewritten and the server has changes the new branch lacks - deploy by hand\n${output}`)
             } else {
                 logToFile(server.name, `Skipped: could not compare with the branch tip\n${output}`)
             }

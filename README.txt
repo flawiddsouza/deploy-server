@@ -20,7 +20,8 @@ Click on Add webhook and you're done.
 Behavior:
 A push to any branch deploys each server in servers.json whose folder is a git checkout on that branch.
 A folder that is not a git checkout deploys on pushes to the repository's default branch.
-A git checkout is skipped, with the reason in its log, when the pushed branch no longer contains its commit,
-since a deploy command that pulls can stop on a conflict after a force-push and leave conflict markers in the files.
-Check the pull and deploy that server by hand.
-The checks run git as the checkout's owner, so they need a Linux server where the SSH user owns the checkout or is root.
+When the pushed branch no longer contains a checkout's commit, such as after a force-push, its commits are first rebased
+onto the new tip in a temporary worktree, since a deploy command that pulls can stop on a conflict and leave conflict markers in the files.
+The server deploys when that rebase is clean and leaves no changes the new tip lacks. Otherwise it is skipped with the reason
+in its log: check the pull and deploy that server by hand.
+The checks need a Linux server. A root SSH user runs git as the checkout's owner, and any other SSH user runs git as itself.
